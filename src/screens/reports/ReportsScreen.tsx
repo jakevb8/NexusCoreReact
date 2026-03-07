@@ -37,6 +37,7 @@ export default function ReportsScreen(_props: Props) {
       const result = await getReports();
       setData(result);
     } catch (err: any) {
+      console.error("[Reports] load failed", err);
       setError(err?.response?.data?.message ?? "Failed to load reports");
     } finally {
       setIsLoading(false);
@@ -66,7 +67,7 @@ export default function ReportsScreen(_props: Props) {
             <View style={[styles.statCard, { flex: 1 }]}>
               <Text style={styles.statLabel}>Utilization</Text>
               <Text style={styles.statValue}>
-                {Math.round(data.utilizationRate * 100)}%
+                {Math.round(data.utilizationRate)}%
               </Text>
             </View>
           </View>

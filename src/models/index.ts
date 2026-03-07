@@ -63,11 +63,32 @@ export interface Asset {
   updatedAt?: string;
 }
 
+// Nested meta object returned by JS backend: {"data":[...],"meta":{"total":8,"page":1,"perPage":20}}
+export interface PaginatedMeta {
+  total?: number;
+  page?: number;
+  perPage?: number;
+}
+
+// Handles both backends:
+//   JS:   { data, meta: { total, page, perPage } }
+//   .NET: { data, total, page, perPage }
 export interface PaginatedAssets {
   data: Asset[];
-  total: number;
-  page: number;
-  perPage: number;
+  // .NET flat fields
+  total?: number;
+  page?: number;
+  perPage?: number;
+  // JS nested meta
+  meta?: PaginatedMeta;
+}
+
+export function resolvedTotal(p: PaginatedAssets | PaginatedAuditLogs): number {
+  return p.meta?.total ?? p.total ?? 0;
+}
+
+export function resolvedPage(p: PaginatedAssets): number {
+  return p.meta?.page ?? p.page ?? 1;
 }
 
 export interface CreateAssetRequest {
@@ -104,8 +125,71 @@ export interface StatusBreakdownItem {
   count: number;
 }
 
+// Unified model used by the UI
 export interface ReportsData {
   totalAssets: number;
   utilizationRate: number;
   byStatus: StatusBreakdownItem[];
+}
+
+// .NET backend response from GET /reports:
+// { totalAssets, utilizationRate, assetsByStatus: [{status, count}], ... }
+export interface DotNetReportsResponse {
+  totalAssets: number;
+  utilizationRate: number;
+  assetsByStatus: StatusBreakdownItem[];
+}
+
+// JS backend response from GET /reports/stats:
+// { totalAssets, utilizationRate, byStatus: { AVAILABLE: n, IN_USE: n, ... }, totalUsers }
+export interface JsReportsResponse {
+  totalAssets: number;
+  utilizationRate: number;
+  byStatus: Record<string, number>;
+}
+
+export function dotNetToReportsData(r: DotNetReportsResponse): ReportsData {
+  return {
+    totalAssets: r.totalAssets,
+    utilizationRate: r.utilizationRate,
+    byStatus: r.assetsByStatus,
+  };
+}
+
+export function jsToReportsData(r: JsReportsResponse): ReportsData {
+  return {
+    totalAssets: r.totalAssets,
+    utilizationRate: r.utilizationRate,
+    byStatus: Object.entries(r.byStatus).reduce<StatusBreakdownItem[]>(
+      (acc, [key, count]) => {
+        if (key in AssetStatus) {
+          acc.push({ status: key as AssetStatus, count });
+        }
+        return acc;
+      },
+      [],
+    ),
+  };
+}
+
+// Handles both backends (same dual-shape as PaginatedAssets)
+export interface PaginatedAuditLogs {
+  data: AuditLog[];
+  // .NET flat fields
+  total?: number;
+  page?: number;
+  perPage?: number;
+  // JS nested meta
+  meta?: PaginatedMeta;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  userId: string;
+  before?: unknown;
+  after?: unknown;
+  createdAt: string;
 }

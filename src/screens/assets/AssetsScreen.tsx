@@ -23,7 +23,13 @@ import {
   getMe,
   getSampleCsvUrl,
 } from "../../api";
-import { Asset, Role, CsvImportResult, PaginatedAssets } from "../../models";
+import {
+  Asset,
+  Role,
+  CsvImportResult,
+  PaginatedAssets,
+  resolvedTotal,
+} from "../../models";
 import {
   COLORS,
   SPACING,
@@ -61,9 +67,10 @@ export default function AssetsScreen({ navigation }: Props) {
         getMe(),
       ]);
       setAssets(result.data);
-      setTotal(result.total);
+      setTotal(resolvedTotal(result));
       setIsManager(me.role === Role.ORG_MANAGER || me.role === Role.SUPERADMIN);
     } catch (err: any) {
+      console.error("[Assets] load failed", err);
       setError(err?.response?.data?.message ?? "Failed to load assets");
     } finally {
       setIsLoading(false);
@@ -89,6 +96,7 @@ export default function AssetsScreen({ navigation }: Props) {
       setSuccessMessage(`"${asset.name}" deleted`);
       load(page, search);
     } catch (err: any) {
+      console.error("[Assets] deleteAsset failed", err);
       setError(err?.response?.data?.message ?? "Delete failed");
     }
   };
@@ -112,6 +120,7 @@ export default function AssetsScreen({ navigation }: Props) {
       setImportResult(importRes);
       load(1, search);
     } catch (err: any) {
+      console.error("[Assets] importCsv failed", err);
       setError(err?.response?.data?.message ?? "Import failed");
     }
   };
@@ -126,6 +135,7 @@ export default function AssetsScreen({ navigation }: Props) {
       );
       await Sharing.shareAsync(uri, { mimeType: "text/csv" });
     } catch (err: any) {
+      console.error("[Assets] downloadSampleCsv failed", err);
       setError("Failed to download sample CSV");
     }
   };

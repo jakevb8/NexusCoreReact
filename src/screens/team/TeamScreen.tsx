@@ -43,6 +43,7 @@ export default function TeamScreen(_props: Props) {
 
   const [inviteVisible, setInviteVisible] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<Role>(Role.VIEWER);
   const [inviteLoading, setInviteLoading] = useState(false);
 
   const [roleTarget, setRoleTarget] = useState<TeamMember | null>(null);
@@ -57,6 +58,7 @@ export default function TeamScreen(_props: Props) {
       setCurrentUserId(me.id);
       setIsManager(me.role === Role.ORG_MANAGER || me.role === Role.SUPERADMIN);
     } catch (err: any) {
+      console.error("[Team] loadTeam failed", err);
       setError(err?.response?.data?.message ?? "Failed to load team");
     } finally {
       setIsLoading(false);
@@ -71,15 +73,17 @@ export default function TeamScreen(_props: Props) {
     if (!inviteEmail.includes("@")) return;
     setInviteLoading(true);
     try {
-      const res = await inviteMember(inviteEmail);
+      const res = await inviteMember(inviteEmail, inviteRole);
       setInviteVisible(false);
       setInviteEmail("");
+      setInviteRole(Role.VIEWER);
       if (res.inviteLink) {
         setInviteLink(res.inviteLink);
       } else {
         setSuccessMessage("Invite email sent");
       }
     } catch (err: any) {
+      console.error("[Team] invite failed", err);
       setError(err?.response?.data?.message ?? "Invite failed");
       setInviteVisible(false);
     } finally {
@@ -93,6 +97,7 @@ export default function TeamScreen(_props: Props) {
       setSuccessMessage(`${member.name ?? member.email} removed`);
       load();
     } catch (err: any) {
+      console.error("[Team] removeMember failed", err);
       setError(err?.response?.data?.message ?? "Remove failed");
     }
   };
@@ -104,6 +109,7 @@ export default function TeamScreen(_props: Props) {
       setSuccessMessage("Role updated");
       load();
     } catch (err: any) {
+      console.error("[Team] updateRole failed", err);
       setError(err?.response?.data?.message ?? "Role update failed");
     }
   };
@@ -139,11 +145,28 @@ export default function TeamScreen(_props: Props) {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            <Text style={styles.roleLabel}>Role</Text>
+            {ASSIGNABLE_ROLES.map((r) => (
+              <TouchableOpacity
+                key={r}
+                style={styles.roleOption}
+                onPress={() => setInviteRole(r)}
+              >
+                <View
+                  style={[
+                    styles.radioCircle,
+                    inviteRole === r && styles.radioSelected,
+                  ]}
+                />
+                <Text style={styles.roleOptionText}>{r}</Text>
+              </TouchableOpacity>
+            ))}
             <View style={styles.dialogActions}>
               <TouchableOpacity
                 onPress={() => {
                   setInviteVisible(false);
                   setInviteEmail("");
+                  setInviteRole(Role.VIEWER);
                 }}
                 style={styles.dialogBtn}
               >
@@ -429,6 +452,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: SPACING.sm,
     gap: SPACING.md,
+  },
+  roleLabel: {
+    ...TYPOGRAPHY.bodySmall,
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.sm,
   },
   radioCircle: {
     width: 20,

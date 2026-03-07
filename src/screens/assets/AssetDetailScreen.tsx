@@ -53,6 +53,7 @@ export default function AssetDetailScreen({ route, navigation }: Props) {
         setStatus(found.status);
       }
     } catch (err: any) {
+      console.error("[AssetDetail] loadAsset failed", err);
       setError("Failed to load asset");
     } finally {
       setIsLoading(false);
@@ -78,6 +79,7 @@ export default function AssetDetailScreen({ route, navigation }: Props) {
       }
       navigation.goBack();
     } catch (err: any) {
+      console.error("[AssetDetail] save failed", err);
       setError(err?.response?.data?.message ?? "Save failed");
     } finally {
       setIsSaving(false);

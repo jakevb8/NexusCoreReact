@@ -11,6 +11,12 @@ import {
   TeamMember,
   InviteResponse,
   ReportsData,
+  DotNetReportsResponse,
+  JsReportsResponse,
+  dotNetToReportsData,
+  jsToReportsData,
+  Role,
+  BackendChoice,
 } from "../models";
 
 let _client: AxiosInstance | null = null;
@@ -108,9 +114,15 @@ export async function getTeam(): Promise<TeamMember[]> {
   return res.data;
 }
 
-export async function inviteMember(email: string): Promise<InviteResponse> {
+export async function inviteMember(
+  email: string,
+  role: Role,
+): Promise<InviteResponse> {
   const client = await getApiClient();
-  const res = await client.post<InviteResponse>("/users/invite", { email });
+  const res = await client.post<InviteResponse>("/users/invite", {
+    email,
+    role,
+  });
   return res.data;
 }
 
@@ -129,8 +141,30 @@ export async function updateMemberRole(
 }
 
 // Reports
-export async function getReports(): Promise<ReportsData> {
-  const client = await getApiClient();
-  const res = await client.get<ReportsData>("/reports");
+// .NET backend: GET /reports
+async function getDotNetReports(
+  client: AxiosInstance,
+): Promise<DotNetReportsResponse> {
+  const res = await client.get<DotNetReportsResponse>("/reports");
   return res.data;
+}
+
+// JS backend: GET /reports/stats
+async function getJsReports(client: AxiosInstance): Promise<JsReportsResponse> {
+  const res = await client.get<JsReportsResponse>("/reports/stats");
+  return res.data;
+}
+
+export async function getReports(): Promise<ReportsData> {
+  const choice = await getBackendChoice();
+  const client = await getApiClient();
+  if (choice === BackendChoice.JS) {
+    const raw = await getJsReports(client);
+    console.log("[Reports] JS raw response", JSON.stringify(raw));
+    return jsToReportsData(raw);
+  } else {
+    const raw = await getDotNetReports(client);
+    console.log("[Reports] .NET raw response", JSON.stringify(raw));
+    return dotNetToReportsData(raw);
+  }
 }

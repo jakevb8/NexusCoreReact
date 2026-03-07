@@ -67,6 +67,7 @@ export default function LoginScreen({ navigation }: Props) {
         }
       }
     } catch (err: any) {
+      console.error("[Login] signIn failed", err);
       setError(err?.message ?? "Sign-in failed. Please try again.");
     } finally {
       setIsLoading(false);

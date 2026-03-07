@@ -44,6 +44,7 @@ export default function SettingsScreen({ navigation }: Props) {
       setMe(meData);
       setSelectedBackend(choice);
     } catch (err: any) {
+      console.error("[Settings] load failed", err);
       setError(err?.response?.data?.message ?? "Failed to load settings");
     } finally {
       setIsLoading(false);

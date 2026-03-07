@@ -40,6 +40,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       });
       navigation.reset({ index: 0, routes: [{ name: "PendingApproval" }] });
     } catch (err: any) {
+      console.error("[Onboarding] register failed", err);
       setError(
         err?.response?.data?.message ?? err?.message ?? "Registration failed",
       );
