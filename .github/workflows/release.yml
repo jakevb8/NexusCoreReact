@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: EAS Build & Submit to Google Play
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Restore google-services.json
+        run: printf '%s' "$GOOGLE_SERVICES_B64" | base64 --decode > google-services.json
+        env:
+          GOOGLE_SERVICES_B64: ${{ secrets.GOOGLE_SERVICES_B64 }}
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION_NAME="${TAG#v}"
+          VERSION_CODE=$(git tag -l 'v*' | wc -l | tr -d ' ')
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Tag: $TAG  →  name=$VERSION_NAME  code=$VERSION_CODE"
+
+      - name: Bump version in app.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            cfg.expo.version = '${{ steps.version.outputs.version_name }}';
+            cfg.expo.android = cfg.expo.android || {};
+            cfg.expo.android.versionCode = parseInt('${{ steps.version.outputs.version_code }}');
+            fs.writeFileSync('app.json', JSON.stringify(cfg, null, 2));
+          "
+
+      - name: EAS Build (Android production AAB)
+        run: eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Submit to Google Play (Internal Testing)
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}

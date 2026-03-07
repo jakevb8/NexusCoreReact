@@ -38,6 +38,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1326b8be-cdba-448c-bcd4-b0384dd56a1c"
+      }
+    },
+    "owner": "jakev.dev"
   }
 }
