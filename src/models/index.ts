@@ -37,13 +37,18 @@ export const BACKEND_CONFIG: Record<
   },
 };
 
+export interface AuthUserOrg {
+  id: string;
+  status: OrgStatus;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
-  name?: string;
+  displayName?: string;
   role: Role;
   organizationId: string;
-  orgStatus: OrgStatus;
+  organization: AuthUserOrg;
 }
 
 export interface Asset {

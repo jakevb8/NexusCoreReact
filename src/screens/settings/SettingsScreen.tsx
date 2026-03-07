@@ -82,7 +82,9 @@ export default function SettingsScreen({ navigation }: Props) {
           {/* Account card */}
           <Text style={styles.sectionHeader}>Account</Text>
           <View style={styles.card}>
-            <Text style={styles.accountName}>{me?.name ?? me?.email}</Text>
+            <Text style={styles.accountName}>
+              {me?.displayName ?? me?.email}
+            </Text>
             <Text style={styles.accountEmail}>{me?.email}</Text>
             <Text style={styles.accountRole}>Role: {me?.role}</Text>
           </View>
