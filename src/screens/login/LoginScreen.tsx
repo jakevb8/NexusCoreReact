@@ -20,7 +20,8 @@ import { COLORS, SPACING, TYPOGRAPHY } from "../../components/theme";
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 GoogleSignin.configure({
-  webClientId: "797114794124-PLACEHOLDER.apps.googleusercontent.com",
+  webClientId:
+    "797114794124-nqbv1s8faoq7kj659p9delt63t9ur7n1.apps.googleusercontent.com",
 });
 
 export default function LoginScreen({ navigation }: Props) {
