@@ -37,6 +37,7 @@ yarn-error.*
 # Firebase config — NEVER COMMIT
 google-services.json
 GoogleService-Info.plist
+credentials.json
 
 # typescript
 *.tsbuildinfo
