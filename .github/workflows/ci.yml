@@ -77,6 +77,24 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
+      - name: Upsert GOOGLE_SERVICES_JSON EAS secret file
+        run: |
+          # Create the secret file variable; if it already exists, update it.
+          eas env:update \
+            --name GOOGLE_SERVICES_JSON \
+            --value "$(cat google-services.json)" \
+            --environment production \
+            --non-interactive 2>/dev/null || \
+          eas env:create \
+            --name GOOGLE_SERVICES_JSON \
+            --type file \
+            --visibility secret \
+            --environment production \
+            --value "$(cat google-services.json)" \
+            --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: EAS Build (Android preview)
         run: eas build --platform android --profile preview --non-interactive --no-wait
         env:

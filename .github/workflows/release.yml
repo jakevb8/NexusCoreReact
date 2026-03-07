@@ -59,6 +59,24 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
+      - name: Upsert GOOGLE_SERVICES_JSON EAS secret file
+        run: |
+          # Create the secret file variable; if it already exists, update it.
+          eas env:update \
+            --name GOOGLE_SERVICES_JSON \
+            --value "$(cat google-services.json)" \
+            --environment production \
+            --non-interactive 2>/dev/null || \
+          eas env:create \
+            --name GOOGLE_SERVICES_JSON \
+            --type file \
+            --visibility secret \
+            --environment production \
+            --value "$(cat google-services.json)" \
+            --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: Derive version from tag
         id: version
         run: |
@@ -69,16 +87,21 @@ jobs:
           echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "Tag: $TAG  →  name=$VERSION_NAME  code=$VERSION_CODE"
 
-      - name: Bump version in app.json
+      - name: Bump version in app.config.js
         run: |
-          node -e "
-            const fs = require('fs');
-            const cfg = JSON.parse(fs.readFileSync('app.json', 'utf8'));
-            cfg.expo.version = '${{ steps.version.outputs.version_name }}';
-            cfg.expo.android = cfg.expo.android || {};
-            cfg.expo.android.versionCode = parseInt('${{ steps.version.outputs.version_code }}');
-            fs.writeFileSync('app.json', JSON.stringify(cfg, null, 2));
-          "
+          # Patch the version and versionCode directly in app.config.js via sed.
+          # The config exports a plain object literal — replace the version string
+          # and inject a versionCode field into the android block.
+          VERSION_NAME="${{ steps.version.outputs.version_name }}"
+          VERSION_CODE="${{ steps.version.outputs.version_code }}"
+          # Replace version field
+          sed -i "s/version: \"[^\"]*\"/version: \"$VERSION_NAME\"/" app.config.js
+          # Inject or replace versionCode inside the android block
+          if grep -q "versionCode:" app.config.js; then
+            sed -i "s/versionCode: [0-9]*/versionCode: $VERSION_CODE/" app.config.js
+          else
+            sed -i "/package: \"me.jakev.rn.nexuscore\"/a\\      versionCode: $VERSION_CODE," app.config.js
+          fi
 
       - name: EAS Build (Android production AAB)
         run: eas build --platform android --profile production --non-interactive
