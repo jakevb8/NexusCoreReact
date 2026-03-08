@@ -140,6 +140,12 @@ export async function updateMemberRole(
   return res.data;
 }
 
+// Auth — delete account
+export async function deleteAccount(): Promise<void> {
+  const client = await getApiClient();
+  await client.delete("/auth/me");
+}
+
 // Reports
 // .NET backend: GET /reports
 async function getDotNetReports(

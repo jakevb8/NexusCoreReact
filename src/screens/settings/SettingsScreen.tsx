@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Modal,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import auth from "@react-native-firebase/auth";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { getMe } from "../../api";
+import { getMe, deleteAccount } from "../../api";
 import { getBackendChoice, setBackendChoice } from "../../store/backend";
 import { AuthUser, BackendChoice, BACKEND_CONFIG } from "../../models";
 import { resetApiClient } from "../../api";
@@ -31,6 +32,8 @@ export default function SettingsScreen({ navigation }: Props) {
     BackendChoice.JS,
   );
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     load();
@@ -61,6 +64,25 @@ export default function SettingsScreen({ navigation }: Props) {
     resetApiClient();
     await auth().signOut();
     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      resetApiClient();
+      await auth().signOut();
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch (err: any) {
+      console.error("[Settings] deleteAccount failed", err);
+      setError(
+        err?.response?.data?.message ??
+          "Failed to delete account. Please try again.",
+      );
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -126,8 +148,73 @@ export default function SettingsScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
+
+          {/* Danger Zone */}
+          <Text style={[styles.sectionHeader, styles.dangerHeader]}>
+            Danger Zone
+          </Text>
+          <View style={[styles.card, styles.dangerCard]}>
+            <Text style={styles.dangerDesc}>
+              Permanently delete your account. If you are the last member of
+              your organization, the organization and all its assets will also
+              be deleted.
+            </Text>
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => setShowDeleteConfirm(true)}
+            >
+              <Text style={styles.deleteBtnText}>Delete Account</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.spacer} />
         </ScrollView>
       )}
+
+      {/* Delete confirmation modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalBody}>This will permanently delete:</Text>
+            <Text style={styles.modalBullet}>• Your profile and account</Text>
+            <Text style={styles.modalBullet}>
+              • Your organization and all its assets (if you are the last
+              member)
+            </Text>
+            <Text style={styles.modalBullet}>• All pending invites</Text>
+            <Text style={[styles.modalBody, styles.modalBodySpacing]}>
+              This action cannot be undone.
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={isDeletingAccount}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.confirmDeleteBtn,
+                  isDeletingAccount && styles.btnDisabled,
+                ]}
+                onPress={handleDeleteAccount}
+                disabled={isDeletingAccount}
+              >
+                <Text style={styles.confirmDeleteText}>
+                  {isDeletingAccount ? "Deleting..." : "Delete"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -144,7 +231,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     color: COLORS.primary,
   },
+  dangerHeader: { color: COLORS.error },
   card: { ...CARD_STYLE, gap: SPACING.xs },
+  dangerCard: { borderColor: COLORS.error, borderWidth: 1 },
   accountName: { ...TYPOGRAPHY.bodyLarge, fontWeight: "600" },
   accountEmail: { ...TYPOGRAPHY.bodySmall },
   accountRole: { ...TYPOGRAPHY.bodyMedium, marginTop: SPACING.xs },
@@ -181,10 +270,73 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   signOutText: { color: COLORS.primary, fontSize: 16, fontWeight: "600" },
+  dangerDesc: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+  },
+  deleteBtn: {
+    borderWidth: 1.5,
+    borderColor: COLORS.error,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    alignItems: "center",
+  },
+  deleteBtnText: { color: COLORS.error, fontSize: 15, fontWeight: "600" },
   errorCard: {
     padding: SPACING.md,
     backgroundColor: COLORS.errorContainer,
     borderRadius: 8,
   },
   errorText: { color: COLORS.error, fontSize: 14 },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.xl,
+  },
+  modalBox: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: SPACING.xl,
+    width: "100%",
+    gap: SPACING.xs,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.onBackground,
+    marginBottom: SPACING.sm,
+  },
+  modalBody: { ...TYPOGRAPHY.bodyMedium, color: COLORS.onBackground },
+  modalBodySpacing: { marginTop: SPACING.sm },
+  modalBullet: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    paddingLeft: SPACING.sm,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: SPACING.md,
+    marginTop: SPACING.lg,
+    justifyContent: "flex-end",
+  },
+  cancelBtn: {
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+  },
+  cancelBtnText: { color: COLORS.primary, fontWeight: "600" },
+  confirmDeleteBtn: {
+    backgroundColor: COLORS.error,
+    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+  },
+  confirmDeleteText: { color: "#fff", fontWeight: "600" },
+  btnDisabled: { opacity: 0.5 },
 });
