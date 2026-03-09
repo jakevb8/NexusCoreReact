@@ -132,11 +132,12 @@ eas build --platform ios --profile development
 | Login        | Google sign-in, backend FilterChip selector, persists choice                                   |
 | Onboarding   | Name + org name, POST /auth/register                                                           |
 | Pending      | Pending message, sign out                                                                      |
-| Dashboard    | Navigation cards to Assets, Team, Reports, Settings                                            |
+| Dashboard    | Navigation cards to Assets, Team, Reports, Events, Settings                                    |
 | Assets       | List + search + pagination, create/edit/delete (manager only), CSV import, sample CSV download |
 | Asset Detail | Name, SKU, description, assignedTo, status chip selector                                       |
 | Team         | Member list, invite by email, copy-link fallback, remove member, change role                   |
 | Reports      | Total assets, utilization %, assets-by-status bar chart                                        |
+| Events       | Paginated Kafka asset status change history (asset name, old/new status, timestamp)            |
 | Settings     | Account info, backend selector, sign out                                                       |
 
 ## Cross-Repo Feature Parity
