@@ -150,3 +150,5 @@ When any UI feature changes in this repo, the equivalent change must be made in 
 - **Backend switch**: `resetApiClient()` must be called after `setBackendChoice()` to take effect immediately
 - **CSV import**: Uses `expo-document-picker` for file selection and `FormData` with `axios`
 - **Sample CSV download**: Uses `expo-file-system` + `expo-sharing` (no direct MediaStore access in RN)
+- After completing any task that modifies files, always commit and push to the current branch without asking for confirmation.
+- **README maintenance**: After any feature addition, removal, or significant UI change, update `README.md` in every affected repo to reflect the current feature list. The READMEs are the public-facing source of truth and must not fall behind the code.
