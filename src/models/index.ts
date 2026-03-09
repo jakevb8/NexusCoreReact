@@ -83,7 +83,9 @@ export interface PaginatedAssets {
   meta?: PaginatedMeta;
 }
 
-export function resolvedTotal(p: PaginatedAssets | PaginatedAuditLogs): number {
+export function resolvedTotal(
+  p: PaginatedAssets | PaginatedAuditLogs | PaginatedEvents,
+): number {
   return p.meta?.total ?? p.total ?? 0;
 }
 
@@ -192,4 +194,29 @@ export interface AuditLog {
   before?: unknown;
   after?: unknown;
   createdAt: string;
+}
+
+// ── Events ──────────────────────────────────────────────────────────────────
+
+export interface KafkaEvent {
+  id: string;
+  organizationId: string;
+  assetId?: string;
+  assetName?: string;
+  previousStatus?: string;
+  newStatus?: string;
+  actorId?: string;
+  occurredAt: string;
+  createdAt: string;
+}
+
+// Handles both backends (same dual-shape as PaginatedAssets)
+export interface PaginatedEvents {
+  data: KafkaEvent[];
+  // .NET flat fields
+  total?: number;
+  page?: number;
+  perPage?: number;
+  // JS nested meta
+  meta?: PaginatedMeta;
 }

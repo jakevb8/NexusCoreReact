@@ -35,6 +35,11 @@ const NAV_ITEMS = [
     screen: "Reports" as keyof RootStackParamList,
   },
   {
+    title: "Events",
+    description: "Browse Kafka asset status change history",
+    screen: "Events" as keyof RootStackParamList,
+  },
+  {
     title: "Settings",
     description: "Backend and account settings",
     screen: "Settings" as keyof RootStackParamList,

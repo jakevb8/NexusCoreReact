@@ -17,6 +17,8 @@ import {
   jsToReportsData,
   Role,
   BackendChoice,
+  KafkaEvent,
+  PaginatedEvents,
 } from "../models";
 
 let _client: AxiosInstance | null = null;
@@ -173,4 +175,13 @@ export async function getReports(): Promise<ReportsData> {
     console.log("[Reports] .NET raw response", JSON.stringify(raw));
     return dotNetToReportsData(raw);
   }
+}
+
+// Events
+export async function getEvents(page = 1): Promise<PaginatedEvents> {
+  const client = await getApiClient();
+  const res = await client.get<PaginatedEvents>("/events", {
+    params: { page },
+  });
+  return res.data;
 }
