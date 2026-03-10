@@ -144,6 +144,8 @@ eas build --platform ios --profile development
 
 When any UI feature changes in this repo, the equivalent change must be made in all sister repos. Backend-only changes (NexusCoreJS API) do not require changes here.
 
+**Cross-repo check rule:** At the start of every task, read the relevant files in all sister repos to check whether an equivalent change has already been made there. If it has, apply the same change here. If this repo is ahead, propagate to the others. Never assume parity — always verify by reading the files.
+
 ## Common Pitfalls
 
 - **EAS Build required**: `@react-native-firebase` uses native modules — Expo Go will not work
