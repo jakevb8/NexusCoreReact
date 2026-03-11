@@ -10,6 +10,7 @@ NexusCoreReact is the Expo React Native implementation of the NexusCore multi-te
 - `NexusCoreDotNet` at `/Users/jake/projects/NexusCoreDotNet` (GitHub: `jakevb8/NexusCoreDotNet`) — ASP.NET Core 8 Razor Pages
 - `NexusCoreAndroid` at `/Users/jake/projects/NexusCoreAndroid` (GitHub: `jakevb8/NexusCoreAndroid`) — Jetpack Compose Android
 - `NexusCoreIOS` at `/Users/jake/projects/NexusCoreIOS` (GitHub: `jakevb8/NexusCoreIOS`) — SwiftUI iOS
+- `NexusCoreAngular` at `/Users/jake/projects/NexusCoreAngular` (GitHub: `jakevb8/NexusCoreAngular`) — Angular 21 web client
 
 ## NEVER COMMIT SECRETS — CRITICAL
 
