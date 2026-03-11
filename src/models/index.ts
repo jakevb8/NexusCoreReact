@@ -47,8 +47,8 @@ export interface AuthUser {
   email: string;
   displayName?: string;
   role: Role;
-  organizationId: string;
-  organization: AuthUserOrg;
+  organizationId?: string;
+  organization?: AuthUserOrg;
 }
 
 export interface Asset {
@@ -113,7 +113,7 @@ export interface CsvImportResult {
 export interface TeamMember {
   id: string;
   email: string;
-  name?: string;
+  displayName?: string;
   role: Role;
   createdAt: string;
 }

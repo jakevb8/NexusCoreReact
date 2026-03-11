@@ -54,7 +54,7 @@ export default function LoginScreen({ navigation }: Props) {
       // Check user in DB
       try {
         const me = await getMe();
-        if (me.organization.status === OrgStatus.PENDING) {
+        if (me.organization?.status === OrgStatus.PENDING) {
           navigation.reset({ index: 0, routes: [{ name: "PendingApproval" }] });
         } else {
           navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] });

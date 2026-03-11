@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,34 +11,64 @@ import {
   Platform,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import auth from "@react-native-firebase/auth";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { register } from "../../api";
+import { register, getMe } from "../../api";
 import { COLORS, SPACING, TYPOGRAPHY } from "../../components/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 
+function slugify(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function OnboardingScreen({ navigation }: Props) {
-  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!slugEdited) {
+      setOrgSlug(slugify(orgName));
+    }
+  }, [orgName, slugEdited]);
+
+  const slugValid =
+    orgSlug.length >= 3 && /^[a-z0-9-]+$/.test(orgSlug);
+  const canSubmit =
+    displayName.trim().length > 0 &&
+    orgName.trim().length > 0 &&
+    slugValid;
+
   const handleRegister = async () => {
-    if (!name.trim() || !orgName.trim()) return;
+    if (!canSubmit) return;
     setIsLoading(true);
     setError(null);
     try {
-      const user = auth().currentUser;
-      if (!user) throw new Error("Not signed in");
-      const firebaseToken = await user.getIdToken(false);
       await register({
-        firebaseToken,
-        orgName: orgName.trim(),
-        name: name.trim(),
-        email: user.email ?? "",
+        organizationName: orgName.trim(),
+        organizationSlug: orgSlug.trim(),
+        displayName: displayName.trim() || undefined,
       });
-      navigation.reset({ index: 0, routes: [{ name: "PendingApproval" }] });
+      // Fetch /auth/me to get the actual org status (register response is flat)
+      try {
+        const me = await getMe();
+        const orgStatus = me.organization?.status ?? "ACTIVE";
+        if (orgStatus === "PENDING") {
+          navigation.reset({ index: 0, routes: [{ name: "PendingApproval" }] });
+        } else {
+          navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] });
+        }
+      } catch {
+        // Default to Dashboard — orgs are auto-approved
+        navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] });
+      }
     } catch (err: any) {
       console.error("[Onboarding] register failed", err);
       setError(
@@ -64,8 +94,8 @@ export default function OnboardingScreen({ navigation }: Props) {
           style={styles.input}
           placeholder="Your name"
           placeholderTextColor={COLORS.textSecondary}
-          value={name}
-          onChangeText={setName}
+          value={displayName}
+          onChangeText={setDisplayName}
           autoCapitalize="words"
           autoCorrect={false}
         />
@@ -80,6 +110,22 @@ export default function OnboardingScreen({ navigation }: Props) {
           autoCorrect={false}
         />
 
+        <TextInput
+          style={[styles.input, !slugValid && orgSlug.length > 0 && styles.inputError]}
+          placeholder="Organization slug"
+          placeholderTextColor={COLORS.textSecondary}
+          value={orgSlug}
+          onChangeText={(v) => {
+            setOrgSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+            setSlugEdited(true);
+          }}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Text style={styles.hint}>
+          Lowercase letters, numbers, hyphens only (min 3 chars)
+        </Text>
+
         {isLoading ? (
           <ActivityIndicator
             color={COLORS.primary}
@@ -88,12 +134,9 @@ export default function OnboardingScreen({ navigation }: Props) {
           />
         ) : (
           <TouchableOpacity
-            style={[
-              styles.button,
-              (!name.trim() || !orgName.trim()) && styles.buttonDisabled,
-            ]}
+            style={[styles.button, !canSubmit && styles.buttonDisabled]}
             onPress={handleRegister}
-            disabled={!name.trim() || !orgName.trim()}
+            disabled={!canSubmit}
           >
             <Text style={styles.buttonText}>Create Organization</Text>
           </TouchableOpacity>
@@ -128,6 +171,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: COLORS.surface,
     color: COLORS.onBackground,
+    marginBottom: SPACING.xs,
+  },
+  inputError: {
+    borderColor: COLORS.error,
+  },
+  hint: {
+    width: "100%",
+    fontSize: 11,
+    color: COLORS.textSecondary,
     marginBottom: SPACING.md,
   },
   button: {

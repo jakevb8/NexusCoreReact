@@ -53,14 +53,12 @@ export async function getMe(): Promise<AuthUser> {
 }
 
 export async function register(payload: {
-  firebaseToken: string;
-  orgName: string;
-  name: string;
-  email: string;
-}): Promise<AuthUser> {
+  organizationName: string;
+  organizationSlug: string;
+  displayName?: string;
+}): Promise<void> {
   const client = await getApiClient();
-  const res = await client.post<AuthUser>("/auth/register", payload);
-  return res.data;
+  await client.post("/auth/register", payload);
 }
 
 // Assets
@@ -97,16 +95,18 @@ export async function deleteAsset(id: string): Promise<void> {
 
 export async function importCsv(formData: FormData): Promise<CsvImportResult> {
   const client = await getApiClient();
-  const res = await client.post<CsvImportResult>("/assets/import", formData, {
+  const res = await client.post<CsvImportResult>("/assets/import/csv", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 }
 
-export async function getSampleCsvUrl(): Promise<string> {
-  const choice = await getBackendChoice();
-  const baseUrl = getBaseUrl(choice);
-  return `${baseUrl}/assets/sample-csv`;
+export function generateSampleCsv(): string {
+  return (
+    "Name,SKU,Description,Status\n" +
+    'Laptop,LAP-001,MacBook Pro 14,AVAILABLE\n' +
+    'Monitor,MON-001,Dell 27" 4K,IN_USE\n'
+  );
 }
 
 // Team

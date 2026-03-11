@@ -94,7 +94,7 @@ export default function TeamScreen(_props: Props) {
   const handleRemove = async (member: TeamMember) => {
     try {
       await removeMember(member.id);
-      setSuccessMessage(`${member.name ?? member.email} removed`);
+      setSuccessMessage(`${member.displayName ?? member.email} removed`);
       load();
     } catch (err: any) {
       console.error("[Team] removeMember failed", err);
@@ -234,7 +234,7 @@ export default function TeamScreen(_props: Props) {
             <View style={styles.dialog}>
               <Text style={styles.dialogTitle}>Remove member?</Text>
               <Text style={styles.dialogBody}>
-                {removeTarget.name ?? removeTarget.email} will be removed from
+                {removeTarget.displayName ?? removeTarget.email} will be removed from
                 the organization.
               </Text>
               <View style={styles.dialogActions}>
@@ -315,9 +315,9 @@ export default function TeamScreen(_props: Props) {
               <View style={styles.row}>
                 <View style={styles.rowInfo}>
                   <Text style={styles.memberName}>
-                    {item.name ?? item.email}
+                    {item.displayName ?? item.email}
                   </Text>
-                  {item.name && (
+                  {item.displayName && (
                     <Text style={styles.memberEmail}>{item.email}</Text>
                   )}
                   <Text style={styles.memberRole}>{item.role}</Text>

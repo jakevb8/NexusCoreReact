@@ -21,7 +21,7 @@ import {
   deleteAsset,
   importCsv,
   getMe,
-  getSampleCsvUrl,
+  generateSampleCsv,
 } from "../../api";
 import {
   Asset,
@@ -128,15 +128,15 @@ export default function AssetsScreen({ navigation }: Props) {
   const handleDownloadSample = async () => {
     setMenuVisible(false);
     try {
-      const url = await getSampleCsvUrl();
-      const { uri } = await FileSystem.downloadAsync(
-        url,
-        FileSystem.documentDirectory + "nexuscore_sample.csv",
-      );
-      await Sharing.shareAsync(uri, { mimeType: "text/csv" });
+      const csv = generateSampleCsv();
+      const fileUri = FileSystem.documentDirectory + "nexuscore_sample.csv";
+      await FileSystem.writeAsStringAsync(fileUri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      await Sharing.shareAsync(fileUri, { mimeType: "text/csv" });
     } catch (err: any) {
       console.error("[Assets] downloadSampleCsv failed", err);
-      setError("Failed to download sample CSV");
+      setError("Failed to generate sample CSV");
     }
   };
 
