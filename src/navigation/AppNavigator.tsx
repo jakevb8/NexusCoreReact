@@ -11,7 +11,6 @@ import AssetsScreen from "../screens/assets/AssetsScreen";
 import AssetDetailScreen from "../screens/assets/AssetDetailScreen";
 import TeamScreen from "../screens/team/TeamScreen";
 import ReportsScreen from "../screens/reports/ReportsScreen";
-import EventsScreen from "../screens/events/EventsScreen";
 import SettingsScreen from "../screens/settings/SettingsScreen";
 import { COLORS } from "../components/theme";
 
@@ -24,7 +23,6 @@ export type RootStackParamList = {
   AssetDetail: { assetId: string };
   Team: undefined;
   Reports: undefined;
-  Events: undefined;
   Settings: undefined;
 };
 
@@ -64,7 +62,6 @@ export default function AppNavigator() {
             <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
             <Stack.Screen name="Team" component={TeamScreen} />
             <Stack.Screen name="Reports" component={ReportsScreen} />
-            <Stack.Screen name="Events" component={EventsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
