@@ -103,14 +103,14 @@ jobs:
           # --value for --type file must be a file path, not inline content.
           eas env:update \
             --variable-name GOOGLE_SERVICES_JSON \
-            --variable-environment production \
+            --variable-environment preview \
             --value ./google-services.json \
             --non-interactive 2>/dev/null || \
           eas env:create \
             --name GOOGLE_SERVICES_JSON \
             --type file \
             --visibility secret \
-            --environment production \
+            --environment preview \
             --value ./google-services.json \
             --non-interactive
         env:

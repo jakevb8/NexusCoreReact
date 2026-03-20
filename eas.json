@@ -12,6 +12,7 @@
       }
     },
     "preview": {
+      "environment": "preview",
       "distribution": "internal",
       "credentialsSource": "local",
       "android": {
