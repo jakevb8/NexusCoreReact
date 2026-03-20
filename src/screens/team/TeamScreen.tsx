@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,10 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Clipboard,
-  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import {
-  getTeam,
-  inviteMember,
-  removeMember,
-  updateMemberRole,
-  getMe,
-} from "../../api";
+import { useTeam } from "../../hooks/useTeam";
 import { TeamMember, Role } from "../../models";
 import { COLORS, SPACING, TYPOGRAPHY } from "../../components/theme";
 import AppHeader from "../../components/AppHeader";
@@ -33,86 +25,37 @@ const ASSIGNABLE_ROLES: Role[] = [
 ];
 
 export default function TeamScreen(_props: Props) {
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isManager, setIsManager] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-
-  const [inviteVisible, setInviteVisible] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<Role>(Role.VIEWER);
-  const [inviteLoading, setInviteLoading] = useState(false);
-
-  const [roleTarget, setRoleTarget] = useState<TeamMember | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
-
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [teamData, me] = await Promise.all([getTeam(), getMe()]);
-      setMembers(teamData);
-      setCurrentUserId(me.id);
-      setIsManager(me.role === Role.ORG_MANAGER || me.role === Role.SUPERADMIN);
-    } catch (err: any) {
-      console.error("[Team] loadTeam failed", err);
-      setError(err?.response?.data?.message ?? "Failed to load team");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const {
+    members,
+    isLoading,
+    error,
+    successMessage,
+    isManager,
+    currentUserId,
+    inviteLink,
+    inviteVisible,
+    inviteEmail,
+    inviteRole,
+    inviteLoading,
+    roleTarget,
+    removeTarget,
+    load,
+    handleInvite,
+    handleRemove,
+    handleRoleChange,
+    copyInviteLink,
+    setInviteVisible,
+    setInviteEmail,
+    setInviteRole,
+    setRoleTarget,
+    setRemoveTarget,
+    setError,
+    setSuccessMessage,
+  } = useTeam();
 
   useEffect(() => {
     load();
   }, [load]);
-
-  const handleInvite = async () => {
-    if (!inviteEmail.includes("@")) return;
-    setInviteLoading(true);
-    try {
-      const res = await inviteMember(inviteEmail, inviteRole);
-      setInviteVisible(false);
-      setInviteEmail("");
-      setInviteRole(Role.VIEWER);
-      if (res.inviteLink) {
-        setInviteLink(res.inviteLink);
-      } else {
-        setSuccessMessage("Invite email sent");
-      }
-    } catch (err: any) {
-      console.error("[Team] invite failed", err);
-      setError(err?.response?.data?.message ?? "Invite failed");
-      setInviteVisible(false);
-    } finally {
-      setInviteLoading(false);
-    }
-  };
-
-  const handleRemove = async (member: TeamMember) => {
-    try {
-      await removeMember(member.id);
-      setSuccessMessage(`${member.displayName ?? member.email} removed`);
-      load();
-    } catch (err: any) {
-      console.error("[Team] removeMember failed", err);
-      setError(err?.response?.data?.message ?? "Remove failed");
-    }
-  };
-
-  const handleRoleChange = async (member: TeamMember, role: Role) => {
-    setRoleTarget(null);
-    try {
-      await updateMemberRole(member.id, role);
-      setSuccessMessage("Role updated");
-      load();
-    } catch (err: any) {
-      console.error("[Team] updateRole failed", err);
-      setError(err?.response?.data?.message ?? "Role update failed");
-    }
-  };
 
   const rightElement = isManager ? (
     <TouchableOpacity
@@ -234,8 +177,8 @@ export default function TeamScreen(_props: Props) {
             <View style={styles.dialog}>
               <Text style={styles.dialogTitle}>Remove member?</Text>
               <Text style={styles.dialogBody}>
-                {removeTarget.displayName ?? removeTarget.email} will be removed from
-                the organization.
+                {removeTarget.displayName ?? removeTarget.email} will be removed
+                from the organization.
               </Text>
               <View style={styles.dialogActions}>
                 <TouchableOpacity
@@ -282,13 +225,7 @@ export default function TeamScreen(_props: Props) {
           <Text style={styles.linkText} numberOfLines={1}>
             Invite link ready
           </Text>
-          <TouchableOpacity
-            onPress={() => {
-              Clipboard.setString(inviteLink);
-              setSuccessMessage("Invite link copied!");
-              setInviteLink(null);
-            }}
-          >
+          <TouchableOpacity onPress={copyInviteLink}>
             <Text style={styles.copyText}>Copy Link</Text>
           </TouchableOpacity>
         </View>

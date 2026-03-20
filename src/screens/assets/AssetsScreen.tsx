@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -7,34 +7,17 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import {
-  getAssets,
-  deleteAsset,
-  importCsv,
-  getMe,
-  generateSampleCsv,
-} from "../../api";
-import {
-  Asset,
-  Role,
-  CsvImportResult,
-  PaginatedAssets,
-  resolvedTotal,
-} from "../../models";
+import { useAssets } from "../../hooks/useAssets";
+import { Asset } from "../../models";
 import {
   COLORS,
   SPACING,
   TYPOGRAPHY,
-  CARD_STYLE,
 } from "../../components/theme";
 import AppHeader from "../../components/AppHeader";
 import StatusChip from "../../components/StatusChip";
@@ -44,38 +27,30 @@ type Props = NativeStackScreenProps<RootStackParamList, "Assets">;
 const PAGE_SIZE = 20;
 
 export default function AssetsScreen({ navigation }: Props) {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isManager, setIsManager] = useState(false);
-  const [importResult, setImportResult] = useState<CsvImportResult | null>(
-    null,
-  );
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  const load = useCallback(async (p: number, s: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [result, me] = await Promise.all([
-        getAssets(p, s || undefined),
-        getMe(),
-      ]);
-      setAssets(result.data);
-      setTotal(resolvedTotal(result));
-      setIsManager(me.role === Role.ORG_MANAGER || me.role === Role.SUPERADMIN);
-    } catch (err: any) {
-      console.error("[Assets] load failed", err);
-      setError(err?.response?.data?.message ?? "Failed to load assets");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const {
+    assets,
+    total,
+    page,
+    search,
+    isLoading,
+    error,
+    isManager,
+    importResult,
+    successMessage,
+    deleteTarget,
+    menuVisible,
+    load,
+    handleSearch,
+    handleDelete,
+    handleImportCsv,
+    handleDownloadSample,
+    setPage,
+    setDeleteTarget,
+    setMenuVisible,
+    setImportResult,
+    setSuccessMessage,
+    setError,
+  } = useAssets();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () =>
@@ -83,62 +58,6 @@ export default function AssetsScreen({ navigation }: Props) {
     );
     return unsubscribe;
   }, [navigation, page, search, load]);
-
-  const handleSearch = (text: string) => {
-    setSearch(text);
-    setPage(1);
-    load(1, text);
-  };
-
-  const handleDelete = async (asset: Asset) => {
-    try {
-      await deleteAsset(asset.id);
-      setSuccessMessage(`"${asset.name}" deleted`);
-      load(page, search);
-    } catch (err: any) {
-      console.error("[Assets] deleteAsset failed", err);
-      setError(err?.response?.data?.message ?? "Delete failed");
-    }
-  };
-
-  const handleImportCsv = async () => {
-    setMenuVisible(false);
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "text/csv",
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const file = result.assets[0];
-      const formData = new FormData();
-      formData.append("file", {
-        uri: file.uri,
-        name: file.name ?? "import.csv",
-        type: "text/csv",
-      } as any);
-      const importRes = await importCsv(formData);
-      setImportResult(importRes);
-      load(1, search);
-    } catch (err: any) {
-      console.error("[Assets] importCsv failed", err);
-      setError(err?.response?.data?.message ?? "Import failed");
-    }
-  };
-
-  const handleDownloadSample = async () => {
-    setMenuVisible(false);
-    try {
-      const csv = generateSampleCsv();
-      const fileUri = FileSystem.documentDirectory + "nexuscore_sample.csv";
-      await FileSystem.writeAsStringAsync(fileUri, csv, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      await Sharing.shareAsync(fileUri, { mimeType: "text/csv" });
-    } catch (err: any) {
-      console.error("[Assets] downloadSampleCsv failed", err);
-      setError("Failed to generate sample CSV");
-    }
-  };
 
   const rightElement = isManager ? (
     <View style={styles.headerActions}>
@@ -227,6 +146,9 @@ export default function AssetsScreen({ navigation }: Props) {
       {error && (
         <View style={styles.errorCard}>
           <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => setError(null)}>
+            <Text style={styles.dismissText}>✕</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -264,7 +186,7 @@ export default function AssetsScreen({ navigation }: Props) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={styles.divider} />}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: Asset }) => (
             <View style={styles.row}>
               <View style={styles.rowInfo}>
                 <Text style={styles.assetName}>{item.name}</Text>
@@ -377,8 +299,11 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     backgroundColor: COLORS.errorContainer,
     borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  errorText: { color: COLORS.error, fontSize: 14 },
+  errorText: { color: COLORS.error, fontSize: 14, flex: 1 },
   importCard: {
     margin: SPACING.md,
     padding: SPACING.md,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { getAssets, createAsset, updateAsset } from "../../api";
-import { Asset, AssetStatus, CreateAssetRequest } from "../../models";
+import { useAssetDetail } from "../../hooks/useAssetDetail";
+import { AssetStatus } from "../../models";
 import { COLORS, SPACING, TYPOGRAPHY } from "../../components/theme";
 import AppHeader from "../../components/AppHeader";
 
@@ -25,65 +25,33 @@ export default function AssetDetailScreen({ route, navigation }: Props) {
   const { assetId } = route.params;
   const isNew = assetId === "new";
 
-  const [name, setName] = useState("");
-  const [sku, setSku] = useState("");
-  const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
-  const [status, setStatus] = useState<AssetStatus>(AssetStatus.AVAILABLE);
-  const [isLoading, setIsLoading] = useState(!isNew);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    name,
+    sku,
+    description,
+    assignedTo,
+    status,
+    isLoading,
+    isSaving,
+    error,
+    loadAsset,
+    setName,
+    setSku,
+    setDescription,
+    setAssignedTo,
+    setStatus,
+    save,
+  } = useAssetDetail();
 
   useEffect(() => {
     if (!isNew) {
-      loadAsset();
+      loadAsset(assetId);
     }
   }, [assetId]);
 
-  const loadAsset = async () => {
-    setIsLoading(true);
-    try {
-      const result = await getAssets(1, undefined);
-      const found = result.data.find((a: Asset) => a.id === assetId);
-      if (found) {
-        setName(found.name);
-        setSku(found.sku);
-        setDescription(found.description ?? "");
-        setAssignedTo(found.assignedTo ?? "");
-        setStatus(found.status);
-      }
-    } catch (err: any) {
-      console.error("[AssetDetail] loadAsset failed", err);
-      setError("Failed to load asset");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSave = async () => {
-    if (!name.trim() || !sku.trim()) return;
-    setIsSaving(true);
-    setError(null);
-    try {
-      const payload: CreateAssetRequest = {
-        name: name.trim(),
-        sku: sku.trim(),
-        description: description.trim() || undefined,
-        assignedTo: assignedTo.trim() || undefined,
-        status,
-      };
-      if (isNew) {
-        await createAsset(payload);
-      } else {
-        await updateAsset(assetId, payload);
-      }
-      navigation.goBack();
-    } catch (err: any) {
-      console.error("[AssetDetail] save failed", err);
-      setError(err?.response?.data?.message ?? "Save failed");
-    } finally {
-      setIsSaving(false);
-    }
+    const success = await save(assetId, isNew);
+    if (success) navigation.goBack();
   };
 
   const saveButton = (

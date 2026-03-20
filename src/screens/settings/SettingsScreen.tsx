@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,9 @@ import {
   Modal,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import auth from "@react-native-firebase/auth";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { getMe, deleteAccount } from "../../api";
-import { getBackendChoice, setBackendChoice } from "../../store/backend";
-import { AuthUser, BackendChoice, BACKEND_CONFIG } from "../../models";
-import { resetApiClient } from "../../api";
+import { useSettings } from "../../hooks/useSettings";
+import { BackendChoice, BACKEND_CONFIG } from "../../models";
 import {
   COLORS,
   SPACING,
@@ -26,62 +23,33 @@ import AppHeader from "../../components/AppHeader";
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
 export default function SettingsScreen({ navigation }: Props) {
-  const [me, setMe] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedBackend, setSelectedBackend] = useState<BackendChoice>(
-    BackendChoice.JS,
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const {
+    me,
+    isLoading,
+    selectedBackend,
+    error,
+    showDeleteConfirm,
+    isDeletingAccount,
+    load,
+    handleSelectBackend,
+    handleSignOut,
+    handleDeleteAccount,
+    setShowDeleteConfirm,
+  } = useSettings();
 
   useEffect(() => {
     load();
   }, []);
 
-  const load = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [meData, choice] = await Promise.all([getMe(), getBackendChoice()]);
-      setMe(meData);
-      setSelectedBackend(choice);
-    } catch (err: any) {
-      console.error("[Settings] load failed", err);
-      setError(err?.response?.data?.message ?? "Failed to load settings");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSelectBackend = async (choice: BackendChoice) => {
-    setSelectedBackend(choice);
-    await setBackendChoice(choice);
-    resetApiClient();
-  };
-
-  const handleSignOut = async () => {
-    resetApiClient();
-    await auth().signOut();
+  const onSignOut = async () => {
+    await handleSignOut();
     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   };
 
-  const handleDeleteAccount = async () => {
-    setIsDeletingAccount(true);
-    try {
-      await deleteAccount();
-      resetApiClient();
-      await auth().signOut();
+  const onDeleteAccount = async () => {
+    const success = await handleDeleteAccount();
+    if (success) {
       navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-    } catch (err: any) {
-      console.error("[Settings] deleteAccount failed", err);
-      setError(
-        err?.response?.data?.message ??
-          "Failed to delete account. Please try again.",
-      );
-      setShowDeleteConfirm(false);
-    } finally {
-      setIsDeletingAccount(false);
     }
   };
 
@@ -145,7 +113,7 @@ export default function SettingsScreen({ navigation }: Props) {
 
           <View style={styles.spacer} />
 
-          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+          <TouchableOpacity style={styles.signOutBtn} onPress={onSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
 
@@ -204,7 +172,7 @@ export default function SettingsScreen({ navigation }: Props) {
                   styles.confirmDeleteBtn,
                   isDeletingAccount && styles.btnDisabled,
                 ]}
-                onPress={handleDeleteAccount}
+                onPress={onDeleteAccount}
                 disabled={isDeletingAccount}
               >
                 <Text style={styles.confirmDeleteText}>
@@ -289,7 +257,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   errorText: { color: COLORS.error, fontSize: 14 },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { getReports } from "../../api";
-import { ReportsData, AssetStatus } from "../../models";
+import { useReports } from "../../hooks/useReports";
+import { AssetStatus } from "../../models";
 import {
   COLORS,
   SPACING,
@@ -22,27 +22,11 @@ import StatusChip from "../../components/StatusChip";
 type Props = NativeStackScreenProps<RootStackParamList, "Reports">;
 
 export default function ReportsScreen(_props: Props) {
-  const [data, setData] = useState<ReportsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error, load } = useReports();
 
   useEffect(() => {
     load();
-  }, []);
-
-  const load = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await getReports();
-      setData(result);
-    } catch (err: any) {
-      console.error("[Reports] load failed", err);
-      setError(err?.response?.data?.message ?? "Failed to load reports");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [load]);
 
   const maxCount = data ? Math.max(...data.byStatus.map((s) => s.count), 1) : 1;
 
