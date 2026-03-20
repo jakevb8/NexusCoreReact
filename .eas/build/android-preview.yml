@@ -1,0 +1,15 @@
+build:
+  name: Android Preview (legacy-peer-deps)
+  steps:
+    - eas/checkout
+    - eas/use_npm_token
+    - run:
+        name: Install dependencies
+        command: npm install --legacy-peer-deps
+    - eas/resolve_build_config
+    - eas/prebuild
+    - eas/configure_eas_update
+    - eas/inject_android_credentials
+    - eas/configure_android_version
+    - eas/run_gradle
+    - eas/find_and_upload_build_artifacts

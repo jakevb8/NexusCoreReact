@@ -3,30 +3,27 @@
     "version": ">= 18.0.0"
   },
   "build": {
-    "base": {
-      "npmInstallCommand": "npm install --legacy-peer-deps"
-    },
     "development": {
-      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "config": "android-preview.yml"
       }
     },
     "preview": {
-      "extends": "base",
       "distribution": "internal",
       "credentialsSource": "local",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "config": "android-preview.yml"
       }
     },
     "production": {
-      "extends": "base",
       "credentialsSource": "local",
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "config": "android-preview.yml"
       }
     }
   },
