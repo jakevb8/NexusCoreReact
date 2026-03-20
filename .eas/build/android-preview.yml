@@ -6,6 +6,9 @@ build:
     - run:
         name: Install dependencies
         command: npm install --legacy-peer-deps
+    - run:
+        name: Restore google-services.json from EAS secret
+        command: cp "$EAS_SECRET_FILE_GOOGLE_SERVICES_JSON" google-services.json
     - eas/resolve_build_config
     - eas/prebuild
     - eas/configure_eas_update
